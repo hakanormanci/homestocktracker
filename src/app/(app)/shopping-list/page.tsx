@@ -42,7 +42,8 @@ export default function ShoppingListPage() {
     if (!activeGroup) return;
     try {
       const res = await fetch(
-        `/api/items?groupId=${activeGroup.id}&flag=ACTIVE`
+        `/api/items?groupId=${activeGroup.id}&flag=ACTIVE`,
+        { cache: "no-store" }
       );
       const data = await res.json();
       setItems(data.items || []);
@@ -60,12 +61,16 @@ export default function ShoppingListPage() {
   const handleToggleStatus = async (item: Item) => {
     const newStatus = item.status === "OVER" ? "LOW" : "OVER";
     try {
-      await fetch(`/api/items/${item.id}/status`, {
+      const res = await fetch(`/api/items/${item.id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      fetchItems();
+      if (res.ok) {
+        setItems((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i))
+        );
+      }
     } catch {
       // ignore
     }
@@ -75,14 +80,16 @@ export default function ShoppingListPage() {
     if (!boughtModal) return;
     setActionLoading(true);
     try {
-      await fetch(`/api/items/${boughtModal}/status`, {
+      const res = await fetch(`/api/items/${boughtModal}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "BOUGHT", boughtNotes }),
       });
+      if (res.ok) {
+        setItems((prev) => prev.filter((i) => i.id !== boughtModal));
+      }
       setBoughtModal(null);
       setBoughtNotes("");
-      fetchItems();
     } catch {
       // ignore
     } finally {
@@ -94,7 +101,7 @@ export default function ShoppingListPage() {
     if (!cancelModal || !cancelReason.trim()) return;
     setActionLoading(true);
     try {
-      await fetch(`/api/items/${cancelModal}/status`, {
+      const res = await fetch(`/api/items/${cancelModal}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -102,9 +109,11 @@ export default function ShoppingListPage() {
           cancelledReason: cancelReason,
         }),
       });
+      if (res.ok) {
+        setItems((prev) => prev.filter((i) => i.id !== cancelModal));
+      }
       setCancelModal(null);
       setCancelReason("");
-      fetchItems();
     } catch {
       // ignore
     } finally {
