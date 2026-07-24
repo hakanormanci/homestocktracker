@@ -59,7 +59,6 @@ export async function PATCH(
     },
   });
 
-  // Send push notification
   const group = await prisma.group.findUnique({ where: { id: item.groupId } });
   const statusMessages: Record<string, string> = {
     BOUGHT: "marked as BOUGHT",
