@@ -1,0 +1,98 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String            @id @default(uuid())
+  email            String            @unique
+  username         String            @unique
+  passwordHash     String
+  isVerified       Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  memberships        GroupMember[]
+  createdGroups      Group[]           @relation("GroupCreator")
+  addedItems         Item[]            @relation("ItemsAdded")
+  boughtItems        Item[]            @relation("ItemsBought")
+  cancelledItems     Item[]            @relation("ItemsCancelled")
+  pushSubscriptions  PushSubscription[]
+  verificationTokens VerificationToken[]
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Group {
+  id          String        @id @default(uuid())
+  name        String
+  createdById String
+  createdBy   User          @relation("GroupCreator", fields: [createdById], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  members GroupMember[]
+  items   Item[]
+}
+
+model GroupMember {
+  id       String   @id @default(uuid())
+  groupId  String
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     String   @default("MEMBER")
+  joinedAt DateTime @default(now())
+
+  @@unique([groupId, userId])
+}
+
+model Item {
+  id              String   @id @default(uuid())
+  groupId         String
+  group           Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  name            String
+  quantity        String
+  description     String?
+  priority        String   @default("MEDIUM")
+  status          String   @default("OVER")
+  flag            String   @default("ACTIVE")
+
+  addedById       String
+  addedBy         User     @relation("ItemsAdded", fields: [addedById], references: [id])
+  createdAt       DateTime @default(now())
+
+  boughtById      String?
+  boughtBy        User?    @relation("ItemsBought", fields: [boughtById], references: [id])
+  boughtAt        DateTime?
+  boughtNotes     String?
+
+  cancelledById   String?
+  cancelledBy     User?    @relation("ItemsCancelled", fields: [cancelledById], references: [id])
+  cancelledAt     DateTime?
+  cancelledReason String?
+
+  updatedAt       DateTime @updatedAt
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
