@@ -2,6 +2,7 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
+  "ignoreCommand": "git ls-files --others --ignored --exclude-standard | head -20 && echo .env",
   "headers": [
     {
       "source": "/sw.js",
